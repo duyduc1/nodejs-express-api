@@ -1,12 +1,13 @@
 const User = require("../models/User.model");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 class UserService {
-   async getAllUsers() {
-     return await User.find({});
-   }
+    async getAllUsers() {
+        return await User.find({});
+    }
 
-   async getUserById(id) {
+    async getUserById(id) {
         return await User.findById(id);
     }
 
@@ -30,6 +31,19 @@ class UserService {
 
     async deleteUserById(id) {
         return User.findByIdAndDelete(id);
+    }
+
+    // forgot password
+    async generateResetToken(email) {
+        const user = await User.findOne({ email });
+        if (!user) return null;
+
+        const token = crypto.randomBytes(32).toString("hex");
+        user.resetToken = token;
+        user.resetTokenExpiration = Date.now() + 3600000;
+        await user.save();
+
+        return { user, token };
     }
 }
 

@@ -1,5 +1,6 @@
 const userService = require("../services/user.service");
 const response = require("../utils/response");
+const { sendMail } = require("../utils/mailer");
 const jwt = require("jsonwebtoken");
 
 class AuthController {
@@ -39,6 +40,32 @@ class AuthController {
             );  
 
             response.success(res, { token, user: { id: user._id, name: user.name, email: user.email, numberphone: user.numberphone, role: user.role} });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async forgorPassword(req, res, next) {
+        try {
+            const { email } = req.body;
+            const result = await userService.generateResetToken(email);
+            if (!result) {
+                return response.error(res, 'User not found', 404);
+            }
+            console.log(result);
+            
+            const resetUrl = `http://localhost:5000/api/auth/resetpass?token=${result.token}`;
+
+            console.log(resetUrl);
+            
+            await sendMail(
+                result.user.email,
+                "Password Reset Request",
+                `<p>You requested a password reset. Click below:</p>
+                <a href="${resetUrl}">${resetUrl}</a>`
+            );
+
+            return res.json({ message: "Reset password link has been sent" }); // phải có return
         } catch (error) {
             next(error);
         }
