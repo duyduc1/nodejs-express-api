@@ -52,12 +52,9 @@ class AuthController {
             if (!result) {
                 return response.error(res, 'User not found', 404);
             }
-            console.log(result);
             
             const resetUrl = `http://localhost:5000/api/auth/resetpass?token=${result.token}`;
 
-            console.log(resetUrl);
-            
             await sendMail(
                 result.user.email,
                 "Password Reset Request",
@@ -65,7 +62,7 @@ class AuthController {
                 <a href="${resetUrl}">${resetUrl}</a>`
             );
 
-            return res.json({ message: "Reset password link has been sent" }); // phải có return
+            return response.success({ message: "Reset password link has been sent" });
         } catch (error) {
             next(error);
         }
