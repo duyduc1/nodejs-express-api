@@ -1,4 +1,4 @@
-const userService = require("../services/user.service");
+const authService = require("../services/auth.service")
 const response = require("../utils/response");
 const { sendMail } = require("../utils/mailer");
 const jwt = require("jsonwebtoken");
@@ -7,12 +7,12 @@ class AuthController {
     async register(req, res, next) {
         try {
             const {name, email, password, numberphone} = req.body;
-            const existingUser = await userService.findByEmail(email);
+            const existingUser = await authService.findByEmail(email);
             if(existingUser) {
                 return response.error(res, 'Email already exists', 400);
             }
 
-            const newUser = await userService.create({name, email, password, numberphone, role: "user"});
+            const newUser = await authService.create({name, email, password, numberphone, role: "user"});
 
             response.created(res, { user : { id: newUser._id, name: newUser.name, email: newUser.email, numberphone: newUser.numberphone, role: newUser.role }});
         } catch (error) {
@@ -23,12 +23,12 @@ class AuthController {
     async login(req, res, next) {
         try {
             const { email, password } = req.body;
-            const user = await userService.findByEmail(email);
+            const user = await authService.findByEmail(email);
             if (!user) {
                 return response.error(res, 'Invalid email or password', 401);
             }
 
-            const isMatch = await userService.checkPassword(password, user.password);
+            const isMatch = await authService.checkPassword(password, user.password);
             if (!isMatch) {
                 return response.error(res, 'Invalid email or password', 401);
             }
@@ -48,7 +48,7 @@ class AuthController {
     async forgorPassword(req, res, next) {
         try {
             const { email } = req.body;
-            const result = await userService.generateResetToken(email);
+            const result = await authService.generateResetToken(email);
             if (!result) {
                 return response.error(res, 'User not found', 404);
             }
@@ -62,9 +62,24 @@ class AuthController {
                 <a href="${resetUrl}">${resetUrl}</a>`
             );
 
-            return response.success({ message: "Reset password link has been sent" });
+            return response.success(res, { message: "Reset password link has been sent" });
         } catch (error) {
             next(error);
+        }
+    }
+
+    async resetPassword(req, res, next) {
+        try {
+            const token = req.query.token;
+            const { password } = req.body;
+            const user = await authService.resetPassword(token, password);
+            if (!user) {
+                return response.error(res, 'Email already exists', 400);
+            }
+
+            return response.success(res, { message: "Password hasbeen reset successfully" });
+        } catch (error) {
+            next(error)
         }
     }
 }
